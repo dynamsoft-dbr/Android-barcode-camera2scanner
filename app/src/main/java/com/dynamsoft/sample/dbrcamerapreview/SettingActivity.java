@@ -8,6 +8,8 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 
+import com.dynamsoft.sample.dbrcamerapreview.util.DBRCache;
+
 public class SettingActivity extends
 		Activity implements CompoundButton.OnCheckedChangeListener {
 

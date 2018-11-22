@@ -1,10 +1,92 @@
-package com.dynamsoft.sample.dbrcamerapreview;
+package com.dynamsoft.sample.dbrcamerapreview.util;
 
+import android.content.Context;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.util.Size;
+import android.view.Display;
+import android.view.Surface;
+import android.view.WindowManager;
 
 public class CameraUtil {
+    /**
+     * Clamps x to between min and max (inclusive on both ends, x = min --> min,
+     * x = max --> max).
+     */
+    public static int clamp(int x, int min, int max) {
+        if (x > max) {
+            return max;
+        }
+        if (x < min) {
+            return min;
+        }
+        return x;
+    }
+
+    /**
+     * Clamps x to between min and max (inclusive on both ends, x = min --> min,
+     * x = max --> max).
+     */
+    public static float clamp(float x, float min, float max) {
+        if (x > max) {
+            return max;
+        }
+        if (x < min) {
+            return min;
+        }
+        return x;
+    }
+
+    public static void inlineRectToRectF(RectF rectF, Rect rect) {
+        rect.left = Math.round(rectF.left);
+        rect.top = Math.round(rectF.top);
+        rect.right = Math.round(rectF.right);
+        rect.bottom = Math.round(rectF.bottom);
+    }
+
+    public static Rect rectFToRect(RectF rectF) {
+        Rect rect = new Rect();
+        inlineRectToRectF(rectF, rect);
+        return rect;
+    }
+
+    public static RectF rectToRectF(Rect r) {
+        return new RectF(r.left, r.top, r.right, r.bottom);
+    }
+
+    /**
+     * Linear interpolation between a and b by the fraction t. t = 0 --> a, t =
+     * 1 --> b.
+     */
+    public static float lerp(float a, float b, float t) {
+        return a + t * (b - a);
+    }
+
+    /**
+     * Given (nx, ny) \in [0, 1]^2, in the display's portrait coordinate system,
+     * returns normalized sensor coordinates \in [0, 1]^2 depending on how the
+     * sensor's orientation \in {0, 90, 180, 270}.
+     * <p>
+     * Returns null if sensorOrientation is not one of the above.
+     * </p>
+     */
+    public static PointF normalizedSensorCoordsForNormalizedDisplayCoords(
+            float nx, float ny, int sensorOrientation) {
+        switch (sensorOrientation) {
+            case 0:
+                return new PointF(nx, ny);
+            case 90:
+                return new PointF(ny, 1.0f - nx);
+            case 180:
+                return new PointF(1.0f - nx, 1.0f - ny);
+            case 270:
+                return new PointF(1.0f - ny, nx);
+            default:
+                return null;
+        }
+    }
     public static Rect boundaryRotate(Point orgPt, Rect rect , boolean bLeft ){
         float orgx = orgPt.x;
         float orgy = orgPt.y;
@@ -92,7 +174,28 @@ public class CameraUtil {
         return rotateRect;
     }
 
-    private Rect ConvertViewRegionToVideoFrameRegion(Rect viewRegion, Rect frameSize,int nOrientationDisplayOffset,Size szCameraView){
+    public static int getOrientationDisplayOffset(Context context,int nSensorOrientation){
+        int mDisplayOffset=0;
+        Display display = ((WindowManager)  context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        switch (display.getRotation()) {
+            case Surface.ROTATION_0: mDisplayOffset = 0; break;
+            case Surface.ROTATION_90: mDisplayOffset = 90; break;
+            case Surface.ROTATION_180: mDisplayOffset = 180; break;
+            case Surface.ROTATION_270: mDisplayOffset = 270; break;
+            default: mDisplayOffset = 0; break;
+        }
+        //		if (mFacing == Facing.FRONT) {
+//			// Here we had ((mSensorOffset - mDisplayOffset) + 360 + 180) % 360
+//			// And it seemed to give the same results for various combinations, but not for all (e.g. 0 - 270).
+//			return (360 - ((mSensorOffset + mDisplayOffset) % 360)) % 360;
+//		} else
+        {
+            int nOrientationDisplayOffset =  (nSensorOrientation - mDisplayOffset + 360) % 360;
+            return nOrientationDisplayOffset;
+        }
+    }
+
+    public static Rect ConvertViewRegionToVideoFrameRegion(Rect viewRegion, Rect frameSize,int nOrientationDisplayOffset,Size szCameraView){
         Rect convertRegion ;
         final int rotateDegree = nOrientationDisplayOffset;
         if(rotateDegree == 90){
@@ -118,7 +221,7 @@ public class CameraUtil {
         return frameRegion;
     }
 
-    private Rect ConvertFrameRegionToViewRegion(Rect frameRegion, Rect frameSize,int nOrientationDisplayOffset,Size szCameraView){
+    public static Rect ConvertFrameRegionToViewRegion(Rect frameRegion, Rect frameSize,int nOrientationDisplayOffset,Size szCameraView){
 
         Rect imageRect = frameSize;
         Rect roateRect =frameRegion;

@@ -21,6 +21,8 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.Display;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.WindowManager;
@@ -30,6 +32,7 @@ import android.view.WindowManager;
  */
 public class AutoFitTextureView extends TextureView {
 
+    private GestureDetector mGestureDetector = null;
     private int mRatioWidth = 0;
     private int mRatioHeight = 0;
 
@@ -76,6 +79,26 @@ public class AutoFitTextureView extends TextureView {
                 setMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
             }
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent m) {
+        if (mGestureDetector != null) {
+            mGestureDetector.onTouchEvent(m);
+        }
+        return true;
+    }
+
+    public void setGestureListener(GestureDetector.OnGestureListener gestureListener) {
+        if (gestureListener != null) {
+            mGestureDetector = new GestureDetector(getContext(), gestureListener);
+        } else {
+            mGestureDetector = null;
+        }
+    }
+
+    public boolean hasGestureDetector() {
+        return mGestureDetector != null;
     }
 
 }

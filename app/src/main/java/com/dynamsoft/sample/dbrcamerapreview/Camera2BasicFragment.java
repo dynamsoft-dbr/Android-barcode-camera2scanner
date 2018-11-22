@@ -24,11 +24,15 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -51,7 +55,9 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -60,9 +66,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.dynamsoft.barcode.EnumImagePixelFormat;
+import com.dynamsoft.barcode.LocalizationResult;
 import com.dynamsoft.barcode.TextResult;
+import com.dynamsoft.sample.dbrcamerapreview.util.AutoFocusHelper;
+import com.dynamsoft.sample.dbrcamerapreview.util.CameraConstants;
+import com.dynamsoft.sample.dbrcamerapreview.util.CameraUtil;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -243,9 +256,24 @@ public class Camera2BasicFragment extends Fragment
             if (reader != null) {
                 Image mImage = reader.acquireLatestImage();
                 if (mImage != null) {
+
+                    //auto zoom in or zoom out
+                    if(mZoomState==1){
+                        if(mZoomRatIndex <gZoomRatio.length)
+                            setZoom(gZoomRatio[mZoomRatIndex++]/10);
+                    }else if(mZoomState==0){
+                        if(mZoomRatIndex>0)
+                        {
+                            mZoomRatIndex--;
+                            setZoom(gZoomRatio[mZoomRatIndex]/10);
+                        }
+                    }
+                    ///////////////////////////////////////////end auto zoom
+
                     ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
                     int nRowStride = mImage.getPlanes()[0].getRowStride();
                     int nPixelStride = mImage.getPlanes()[0].getPixelStride();
+
                     if(mBackgroundHandler2!=null &&!bDecoding) {
                         bDecoding = true;
                         byte[] bytes =  new byte[buffer.remaining()];
@@ -255,6 +283,10 @@ public class Camera2BasicFragment extends Fragment
                         message.what = 0x101 ;
                         message.obj = imageData;
                         mBackgroundHandler2.sendMessage(message);
+
+                        //TODO:save preview datas to file --only for debug
+                        //saveYuvDataToLocalFile(bytes,reader.getWidth(),reader.getHeight());
+                        //end TODO
                     }
                     mImage.close();
                 }
@@ -287,6 +319,10 @@ public class Camera2BasicFragment extends Fragment
      * Whether the current camera device supports Flash or not.
      */
     private boolean mFlashSupported;
+    /**
+     * Whether the current camera device supports auto focus or not.
+     */
+    private boolean mAutoFocusSupported = true;
 
     /**
      * Orientation of the camera sensor
@@ -300,6 +336,8 @@ public class Camera2BasicFragment extends Fragment
             = null;
     private static TextView mResult;
     private QRCodeView mQrView;
+    private Rect mQrCropRect;
+    private CameraCharacteristics mCameraCharacteristics;
 
     /**
      * Shows a {@link Toast} on the UI thread.
@@ -381,9 +419,19 @@ public class Camera2BasicFragment extends Fragment
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
-        mResult =view.findViewById(R.id.tv_result) ;
-        mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        mQrView = (QRCodeView)view.findViewById(R.id.qr_view);
+          mResult =view.findViewById(R.id.tv_result) ;
+        mTextureView =  view.findViewById(R.id.texture);
+        mQrView = view.findViewById(R.id.qr_view);
+        //mQrView.setVisibility(View.INVISIBLE);
+        mTextureView.setGestureListener(new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+
+                setManualFocusAt((int) e.getX(), (int) e.getY());
+                return true;
+            }
+        });
+
     }
 
     @Override
@@ -447,16 +495,16 @@ public class Camera2BasicFragment extends Fragment
         CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
             for (String cameraId : manager.getCameraIdList()) {
-                CameraCharacteristics characteristics
+                mCameraCharacteristics
                         = manager.getCameraCharacteristics(cameraId);
 
                 // We don't use a front facing camera in this sample.
-                Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                Integer facing = mCameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
                     continue;
                 }
 
-                StreamConfigurationMap map = characteristics.get(
+                StreamConfigurationMap map = mCameraCharacteristics.get(
                         CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 if (map == null) {
                     continue;
@@ -484,7 +532,7 @@ public class Camera2BasicFragment extends Fragment
                 // coordinate.
                 int displayRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
                 //noinspection ConstantConditions
-                mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                mSensorOrientation = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
                 boolean swappedDimensions = false;
                 switch (displayRotation) {
                     case Surface.ROTATION_0:
@@ -542,11 +590,18 @@ public class Camera2BasicFragment extends Fragment
                             mPreviewSize.getHeight(), mPreviewSize.getWidth());
                 }
 
+
                 // Check if the flash is supported.
-                Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                Boolean available = mCameraCharacteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
                 mFlashSupported = available == null ? false : available;
 
                 mCameraId = cameraId;
+
+                checkAutoFocusSupported();
+                checkFlashSupported();
+
+                mCropRegion = AutoFocusHelper.cropRegionForZoom(mCameraCharacteristics,
+                        CameraConstants.ZOOM_REGION_DEFAULT);
 
                 //show the crop view
                 int nQrViewW = mTextureView.getWidth()*3/4,nQrViewH=mTextureView.getHeight()*3/4;
@@ -555,10 +610,10 @@ public class Camera2BasicFragment extends Fragment
 
                 int boxLeft  = (mTextureView.getWidth()-nQrViewW)/2;
                 int boxTop   = (mTextureView.getHeight()-nQrViewH)/2;
-//                int boxRight = Math.min((viewRect.width()+boxLeft),mTextureView.getWidth()-1);
-//                int boxBottom = Math.min((viewRect.height()+boxTop),mTextureView.getHeight()-1);
-                if(boxLeft>=0 && boxTop>=0 )
-                    mQrView.reSetboxview(boxLeft, boxTop, nQrViewW, nQrViewH);
+                if(boxLeft>=0 && boxTop>=0 ) {
+                    mQrCropRect = new Rect(boxLeft,boxTop,boxLeft+nQrViewW,boxTop+nQrViewH);
+                    mQrView.reSetboxview(mQrCropRect.left, mQrCropRect.top, mQrCropRect.width(), mQrCropRect.height());
+                }
 
 
                 return;
@@ -629,6 +684,7 @@ public class Camera2BasicFragment extends Fragment
     /**
      * Starts a background thread and its {@link Handler}.
      */
+
     private void startBackgroundThread() {
         mBackgroundThread = new HandlerThread("CameraBackground");
         mBackgroundThread.start();
@@ -648,20 +704,45 @@ public class Camera2BasicFragment extends Fragment
                 ImageData imageData = (ImageData)msg.obj;
             try {
                 mMainActivity.getMainBarcdoeReader().decodeBuffer(imageData.mBytes,imageData.mWidth,imageData.mHeight, imageData.mStride, EnumImagePixelFormat.IPF_NV21, "");
+                boolean bTempCropContains = false;
+                if(mMainActivity.getMainBarcdoeReader().getAllLocalizationResults().length>=1){
+                    LocalizationResult []localizationResults =  mMainActivity.getMainBarcdoeReader().getAllLocalizationResults();
+                    for (LocalizationResult result:localizationResults ) {
+                        com.dynamsoft.barcode.Point[] points = result.resultPoints;
+                        int leftX,leftY,rightX,rightY;
+                        rightX=leftX = points[0].x;
+                        rightY=leftY = points[0].y;
+                        for (com.dynamsoft.barcode.Point pt:points ) {
+                            if(pt.x<leftX) leftX=pt.x;
+                            if(pt.y<leftY) leftY=pt.y;
+                            if(pt.x>rightX) rightX = pt.x;
+                            if(pt.y>rightY) rightY = pt.y;
+                        }
+                        Rect frameRegion = new Rect(leftX,leftY,rightX,rightY);
+                        Rect frameSize = new Rect(0,0,outputPreviewSize.getWidth(),outputPreviewSize.getHeight());
+                        Rect viewRegion = CameraUtil.ConvertFrameRegionToViewRegion(frameRegion, frameSize,CameraUtil.getOrientationDisplayOffset((Context)getActivity(),mSensorOrientation),new Size(mTextureView.getWidth(),mTextureView.getHeight()));
+
+                        if(mQrCropRect.contains(viewRegion) || viewRegion.contains(mQrCropRect)||mQrCropRect.intersect (mQrCropRect)) {
+                            if (mQrCropRect.contains(viewRegion)) {
+                                mZoomState = 1; //zoom in
+                            } else {
+                                mZoomState = 2;//zoom hold
+                            }
+                            bTempCropContains = true;
+                            break;
+                        }
+                    }
+                }
+                if(!bTempCropContains){
+                    mZoomState = 0;//zoom original
+                }
+
+
                 TextResult[] result = mMainActivity.getMainBarcdoeReader().getAllTextResults();
                 if (result != null && result.length > 0) {
-                    Log.d("decodeBuffer", "success:"+result[0].barcodeText);
-                    //mResult.setText(result[0].barcodeText);
-
-                    String str = "";
-                    for (int i = 0; i < result.length; i++) {
-                        if (i == 0)
-                            str = result[i].barcodeText;
-                        else
-                            str = str + "\n\n" + result[i].barcodeText;
-                    }
+                    String str = paraseResult(result);
                     message.obj = str;
-                     mHandler.sendMessage(message);
+                    mHandler.sendMessage(message);
                 }else{
                     message.obj = "";
                     mHandler.sendMessage(message);
@@ -680,6 +761,7 @@ public class Camera2BasicFragment extends Fragment
         };
 
     }
+
 
     /**
      * Stops the background thread and its {@link Handler}.
@@ -745,8 +827,7 @@ public class Camera2BasicFragment extends Fragment
                             mCaptureSession = cameraCaptureSession;
                             try {
                                 // Auto focus should be continuous for camera preview.
-                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                                        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                updateAutoFocus();
                                 // Flash is automatically enabled when necessary.
                                 setAutoFlash(mPreviewRequestBuilder);
 
@@ -899,6 +980,223 @@ public class Camera2BasicFragment extends Fragment
                             })
                     .create();
         }
+    }
+
+    /**
+     * Whether the camera is manual focusing now
+     */
+    private boolean mIsManualFocusing;
+    /**
+     * The current camera auto focus mode
+     */
+    private boolean mAutoFocus = true;
+
+    private Rect mCropRegion;
+    private MeteringRectangle[] mAFRegions = AutoFocusHelper.getZeroWeightRegion();
+
+    private MeteringRectangle[] mAERegions = AutoFocusHelper.getZeroWeightRegion();
+
+    /**
+     * Check if the auto focus is supported.
+     */
+    private void checkAutoFocusSupported() {
+        int[] modes = mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
+        mAutoFocusSupported = !(modes == null || modes.length == 0 ||
+                (modes.length == 1 && modes[0] == CameraCharacteristics.CONTROL_AF_MODE_OFF));
+    }
+
+    /**
+     * Check if the flash is supported.
+     */
+    private void checkFlashSupported() {
+        Boolean available = mCameraCharacteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+        mFlashSupported = available == null ? false : available;
+    }
+
+
+
+    /**
+     * Updates the internal state of manual focus.
+     */
+    void updateManualFocus(float x, float y) {
+        @SuppressWarnings("ConstantConditions")
+        int sensorOrientation = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+        mAFRegions = AutoFocusHelper.afRegionsForNormalizedCoord(x, y, mCropRegion, sensorOrientation);
+        mAERegions = AutoFocusHelper.aeRegionsForNormalizedCoord(x, y, mCropRegion, sensorOrientation);
+        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, mAFRegions);
+        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, mAERegions);
+        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+    }
+
+    void setManualFocusAt(int x, int y) {
+        int mDisplayOrientation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
+        float points[] = new float[2];
+        points[0] = (float) x / mTextureView.getWidth();
+        points[1] = (float) y / mTextureView.getHeight();
+        Matrix rotationMatrix = new Matrix();
+        rotationMatrix.setRotate(mDisplayOrientation, 0.5f, 0.5f);
+        rotationMatrix.mapPoints(points);
+        if (mPreviewRequestBuilder != null) {
+            mIsManualFocusing = true;
+            updateManualFocus(points[0], points[1]);
+
+            if (mCaptureSession != null) {
+                try {
+                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                            CaptureRequest.CONTROL_AF_TRIGGER_START);
+                    mCaptureSession.capture(mPreviewRequestBuilder.build(), null, mBackgroundHandler);
+                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                            CaptureRequest.CONTROL_AF_TRIGGER_IDLE);
+                    mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
+                            null, mBackgroundHandler);
+                } catch (CameraAccessException | IllegalStateException e) {
+                    Log.e(TAG, "Failed to set manual focus.", e);
+                }
+            }
+            resumeAutoFocusAfterManualFocus();
+        }
+    }
+    private final Runnable mAutoFocusRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mPreviewRequestBuilder != null) {
+                mIsManualFocusing = false;
+                updateAutoFocus();
+                if (mCaptureSession != null) {
+                    try {
+                        mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
+                                mCaptureCallback, mBackgroundHandler);
+                    } catch (CameraAccessException e) {
+                        Log.e(TAG, "Failed to set manual focus.", e);
+                    }
+                }
+            }
+        }
+    };
+
+    private void resumeAutoFocusAfterManualFocus() {
+        mBackgroundHandler.removeCallbacks(mAutoFocusRunnable);
+        mBackgroundHandler.postDelayed(mAutoFocusRunnable, CameraConstants.FOCUS_HOLD_MILLIS);
+    }
+
+    void updateAutoFocus() {
+        if (mAutoFocus) {
+            if (!mAutoFocusSupported) {
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                        CaptureRequest.CONTROL_AF_MODE_OFF);
+            } else {
+                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+
+            }
+        } else {
+            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                    CaptureRequest.CONTROL_AF_MODE_OFF);
+        }
+        mAFRegions = AutoFocusHelper.getZeroWeightRegion();
+        mAERegions = AutoFocusHelper.getZeroWeightRegion();
+        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, mAFRegions);
+        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, mAERegions);
+    }
+
+    public void setAutoFocus(boolean autoFocus) {
+        if (mAutoFocus == autoFocus) {
+            return;
+        }
+        mAutoFocus = autoFocus;
+        if (mPreviewRequestBuilder != null) {
+            updateAutoFocus();
+            if (mCaptureSession != null) {
+                try {
+                    mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
+                            mCaptureCallback, mBackgroundHandler);
+                } catch (CameraAccessException e) {
+                    mAutoFocus = !mAutoFocus; // Revert
+                }
+            }
+        }
+    }
+
+    public boolean getAutoFocus() {
+        return mAutoFocus;
+    }
+
+
+    String paraseResult( TextResult[] result ) {
+        String strResult = "";
+        if (result == null || result.length == 0) {
+            return strResult;
+        }
+
+        for (int i = 0; i < result.length; i++) {
+            String strCurResult = "["+i+"] Barcode format:"+result[i].barcodeFormatString;
+            strCurResult +="\n"+result[i].barcodeText;
+            if (i == 0)
+                strResult = strCurResult;
+            else
+                strResult+="\n\n" +strCurResult;
+
+        }
+        return strResult;
+    }
+
+
+
+    int mZoomState = 0; //0-original,1-zoom in,2-zoom hold
+    int mZoomRatIndex =0;
+    static final int gZoomRatio[] = {
+            10,100, 114, 132, 151, 174,190,210, 221,230, 249, 268, 283, 295, 308, 322, 336
+    };
+    void setZoom(double zoom_level){
+        float maxZoom = (mCameraCharacteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM))*10;
+        Rect rectActiveArraySize = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+        double minW = rectActiveArraySize.width()*1.0 / maxZoom;
+        double minH = rectActiveArraySize.height()*1.0 / maxZoom;
+        double difW = rectActiveArraySize.width() - minW;
+        double difH = rectActiveArraySize.height() - minH;
+        int cropW = (int) (difW /100 *zoom_level);
+        int cropH = (int) (difH /100 *zoom_level);
+        cropW -= cropW & 3;
+        cropH -= cropH & 3;
+        Rect zoom = new Rect(cropW, cropH, rectActiveArraySize.width() - cropW, rectActiveArraySize.height() - cropH);
+        mPreviewRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom);
+        try {
+            mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback, mBackgroundHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    void saveYuvDataToLocalFile(byte[] data,int width,int height){
+        FileOutputStream output = null;
+        try {
+            YuvImage yuvimage = new YuvImage(data, ImageFormat.NV21, width, height, null);
+
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            yuvimage.compressToJpeg(new Rect(0, 0,width, height), 80, baos);
+            Bitmap bmp = BitmapFactory.decodeByteArray(baos.toByteArray(), 0, baos.toByteArray().length);
+            File mFile =new File(getPictureFilePath(getActivity()));
+
+            output = new FileOutputStream(mFile);
+            bmp.compress(Bitmap.CompressFormat.JPEG, 85, output);
+            output.write(baos.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (null != output) {
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    private String getPictureFilePath(Context context) {
+        final File dir = context.getExternalFilesDir(null);
+        return (dir == null ? "" : (dir.getAbsolutePath() + "/"))
+                + System.currentTimeMillis() + ".jpg";
     }
 
 }

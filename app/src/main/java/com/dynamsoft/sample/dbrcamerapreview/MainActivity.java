@@ -11,6 +11,7 @@ import android.view.WindowManager;
 import com.dynamsoft.barcode.BarcodeReader;
 import com.dynamsoft.barcode.EnumBarcodeFormat;
 import com.dynamsoft.barcode.PublicRuntimeSettings;
+import com.dynamsoft.sample.dbrcamerapreview.util.DBRCache;
 
 public class MainActivity extends AppCompatActivity {
     private BarcodeReader mbarcodeReader;

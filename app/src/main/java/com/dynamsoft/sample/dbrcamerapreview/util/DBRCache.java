@@ -1,4 +1,4 @@
-package com.dynamsoft.sample.dbrcamerapreview;
+package com.dynamsoft.sample.dbrcamerapreview.util;
 
 import android.content.Context;
 import android.graphics.Bitmap;
