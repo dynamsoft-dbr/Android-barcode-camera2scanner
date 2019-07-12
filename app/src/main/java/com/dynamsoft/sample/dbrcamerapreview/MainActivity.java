@@ -10,6 +10,7 @@ import android.view.WindowManager;
 
 import com.dynamsoft.barcode.BarcodeReader;
 import com.dynamsoft.barcode.EnumBarcodeFormat;
+import com.dynamsoft.barcode.EnumIntermediateResultType;
 import com.dynamsoft.barcode.PublicRuntimeSettings;
 import com.dynamsoft.sample.dbrcamerapreview.util.DBRCache;
 
@@ -23,7 +24,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         try {
-            mbarcodeReader = new BarcodeReader("t0068MgAAACm/O50JQCeJC5TJTNpXrUs4Do3MPzQxK0CvQvCGslylduMz/icYA3lAmVbE7NYhTFM60BRpW3QUav1sP6MWdZo=");
+            mbarcodeReader = new BarcodeReader();
+            //mbarcodeReader = new BarcodeReader("license-key");
+            //You can get trial license from "https://www.dynamsoft.com/CustomerPortal/Portal/Triallicense.aspx"
+            PublicRuntimeSettings settings = mbarcodeReader.getRuntimeSettings();
+            settings.intermediateResultTypes = EnumIntermediateResultType.IRT_TYPED_BARCODE_ZONE;
+            mbarcodeReader.updateRuntimeSettings(settings);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -78,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             int nBarcodeFormat =0;
             if (mCache.getAsString("linear").equals("1")) {
-                nBarcodeFormat = nBarcodeFormat| EnumBarcodeFormat.BF_OneD;
+                nBarcodeFormat = nBarcodeFormat| EnumBarcodeFormat.BF_ONED;
             }
             if (mCache.getAsString("qrcode").equals("1")) {
                 nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_QR_CODE;
@@ -94,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             PublicRuntimeSettings runtimeSettings =  mbarcodeReader.getRuntimeSettings();
-            runtimeSettings.mBarcodeFormatIds = nBarcodeFormat;
+            runtimeSettings.barcodeFormatIds = nBarcodeFormat;
             mbarcodeReader.updateRuntimeSettings(runtimeSettings);
 
         } catch (Exception e) {
