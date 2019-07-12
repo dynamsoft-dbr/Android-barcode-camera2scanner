@@ -66,6 +66,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.dynamsoft.barcode.EnumImagePixelFormat;
+import com.dynamsoft.barcode.IntermediateResult;
 import com.dynamsoft.barcode.LocalizationResult;
 import com.dynamsoft.barcode.TextResult;
 import com.dynamsoft.sample.dbrcamerapreview.util.AutoFocusHelper;
@@ -703,10 +704,11 @@ public class Camera2BasicFragment extends Fragment
 
                 ImageData imageData = (ImageData)msg.obj;
             try {
-                mMainActivity.getMainBarcdoeReader().decodeBuffer(imageData.mBytes,imageData.mWidth,imageData.mHeight, imageData.mStride, EnumImagePixelFormat.IPF_NV21, "");
+                TextResult[] results = mMainActivity.getMainBarcdoeReader().decodeBuffer(imageData.mBytes,imageData.mWidth,imageData.mHeight, imageData.mStride, EnumImagePixelFormat.IPF_NV21, "");
                 boolean bTempCropContains = false;
-                if(mMainActivity.getMainBarcdoeReader().getAllLocalizationResults().length>=1){
-                    LocalizationResult []localizationResults =  mMainActivity.getMainBarcdoeReader().getAllLocalizationResults();
+                if(mMainActivity.getMainBarcdoeReader().getIntermediateResults().length>=1){
+                    IntermediateResult[] intermediateResults =  mMainActivity.getMainBarcdoeReader().getIntermediateResults();
+                    LocalizationResult[] localizationResults = (LocalizationResult[])intermediateResults[0].results;
                     for (LocalizationResult result:localizationResults ) {
                         com.dynamsoft.barcode.Point[] points = result.resultPoints;
                         int leftX,leftY,rightX,rightY;
@@ -737,10 +739,8 @@ public class Camera2BasicFragment extends Fragment
                     mZoomState = 0;//zoom original
                 }
 
-
-                TextResult[] result = mMainActivity.getMainBarcdoeReader().getAllTextResults();
-                if (result != null && result.length > 0) {
-                    String str = paraseResult(result);
+                if (results != null && results.length > 0) {
+                    String str = paraseResult(results);
                     message.obj = str;
                     mHandler.sendMessage(message);
                 }else{
