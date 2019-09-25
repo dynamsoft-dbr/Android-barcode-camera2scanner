@@ -18,6 +18,12 @@ public class SettingActivity extends
 	CheckBox mPDF417;
 	CheckBox mDataMatrix;
 	CheckBox mDataAztec;
+	CheckBox mDataBar;
+	CheckBox mPatchCode;
+	CheckBox mMaxiCode;
+	CheckBox mMicroQR;
+	CheckBox mMicroPDF417;
+	CheckBox mGS1Composite;
 	private int mBarcodeFormat;
 	private DBRCache mCache;
 
@@ -31,6 +37,13 @@ public class SettingActivity extends
 		mPDF417= findViewById(R.id.ckbPDF417);
 		mDataMatrix= findViewById(R.id.ckbDataMatrix);
 		mDataAztec= findViewById(R.id.ckbAztec);
+		mDataBar = findViewById(R.id.ckbDatabar);
+		mPatchCode = findViewById(R.id.ckbPatchCode);
+		mMaxiCode = findViewById(R.id.ckbMaxiCode);
+		mMicroQR = findViewById(R.id.ckbMicroQR);
+		mMicroPDF417 = findViewById(R.id.ckbMicroPDF417);
+		mGS1Composite = findViewById(R.id.ckbGS1Composite);
+
 
 		Toolbar toolbar = (Toolbar) findViewById(R.id.settoolbar);
 		toolbar.setTitle("Types Setting");
@@ -45,6 +58,12 @@ public class SettingActivity extends
 		mPDF417.setOnCheckedChangeListener(this);
 		mDataMatrix.setOnCheckedChangeListener(this);
 		mDataAztec.setOnCheckedChangeListener(this);
+		mDataBar.setOnCheckedChangeListener(this);
+		mPatchCode.setOnCheckedChangeListener(this);
+		mMaxiCode.setOnCheckedChangeListener(this);
+		mMicroQR.setOnCheckedChangeListener(this);
+		mMicroPDF417.setOnCheckedChangeListener(this);
+		mGS1Composite.setOnCheckedChangeListener(this);
 
 		mCache = DBRCache.get(this);
 		if ("1".equals(mCache.getAsString("linear"))) {
@@ -62,6 +81,25 @@ public class SettingActivity extends
 		if ("1".equals(mCache.getAsString("aztec"))) {
 			mDataAztec.setChecked(true);
 		}
+		if ("1".equals(mCache.getAsString("databar"))) {
+			mDataBar.setChecked(true);
+		}
+		if ("1".equals(mCache.getAsString("patchcode"))) {
+			mPatchCode.setChecked(true);
+		}
+		if ("1".equals(mCache.getAsString("maxicode"))) {
+			mMaxiCode.setChecked(true);
+		}
+		if ("1".equals(mCache.getAsString("microqr"))) {
+			mMicroQR.setChecked(true);
+		}
+		if ("1".equals(mCache.getAsString("micropdf417"))) {
+			mMicroPDF417.setChecked(true);
+		}
+		if ("1".equals(mCache.getAsString("gs1compositecode"))) {
+			mGS1Composite.setChecked(true);
+		}
+
 		updateFormatCheckboxsState();
 
 	}
@@ -89,6 +127,31 @@ public class SettingActivity extends
 			nState++;
 			enabledCheckBox = mDataAztec;
 		}
+		if(mDataBar.isChecked()) {
+			nState++;
+			enabledCheckBox = mDataBar;
+		}
+		if(mPatchCode.isChecked()) {
+			nState++;
+			enabledCheckBox = mPatchCode;
+		}
+		if(mMaxiCode.isChecked()) {
+			nState++;
+			enabledCheckBox = mMaxiCode;
+		}
+		if(mMicroQR.isChecked()) {
+			nState++;
+			enabledCheckBox = mMicroQR;
+		}
+		if(mMicroPDF417.isChecked()) {
+			nState++;
+			enabledCheckBox = mMicroPDF417;
+		}
+		if(mGS1Composite.isChecked()) {
+			nState++;
+			enabledCheckBox = mGS1Composite;
+		}
+
 
 		if(nState ==1){
 			enabledCheckBox.setEnabled(false);
@@ -98,6 +161,12 @@ public class SettingActivity extends
 			mPDF417.setEnabled(true);
 			mDataMatrix.setEnabled(true);
 			mDataAztec.setEnabled(true);
+			mDataBar.setEnabled(true);
+			mPatchCode.setEnabled(true);
+			mMaxiCode.setEnabled(true);
+			mMicroQR.setEnabled(true);
+			mMicroPDF417.setEnabled(true);
+			mGS1Composite.setEnabled(true);
 		}
 	}
 
@@ -128,6 +197,35 @@ public class SettingActivity extends
 			mCache.put("aztec", "1");
 		} else {
 			mCache.put("aztec", "0");
+		}if (mDataBar.isChecked()) {
+			mCache.put("databar", "1");
+		} else {
+			mCache.put("databar", "0");
+		}
+		if (mPatchCode.isChecked()) {
+			mCache.put("patchcode", "1");
+		} else {
+			mCache.put("patchcode", "0");
+		}
+		if (mMaxiCode.isChecked()) {
+			mCache.put("maxicode", "1");
+		} else {
+			mCache.put("maxicode", "0");
+		}
+		if (mMicroQR.isChecked()) {
+			mCache.put("microqr", "1");
+		} else {
+			mCache.put("microqr", "0");
+		}
+		if (mMicroPDF417.isChecked()) {
+			mCache.put("micropdf417", "1");
+		} else {
+			mCache.put("micropdf417", "0");
+		}
+		if (mGS1Composite.isChecked()) {
+			mCache.put("gs1compositecode", "1");
+		} else {
+			mCache.put("gs1compositecode", "0");
 		}
 		setResult(0);
 	}

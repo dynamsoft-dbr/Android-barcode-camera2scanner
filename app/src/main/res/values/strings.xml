@@ -21,10 +21,16 @@
 
     <string name="scan_hint">Align the barcode within the square</string>
     <string name="flash_off">Flash off</string>
-    <string name="about">Dynamsoft Barcode Reader Mobile App Demo (Dynamsoft Barcode Reader SDK v6.4.0)\r\n© 2018 Dynamsoft All rights reserved.\r\n\r\nIntegrate Barcode Reader Functionality into your own Mobile App?\r\n</string>
+    <string name="about">Dynamsoft Barcode Reader Mobile App Demo (Dynamsoft Barcode Reader SDK)\r\n© 2018 Dynamsoft All rights reserved.\r\n\r\nIntegrate Barcode Reader Functionality into your own Mobile App?\r\n</string>
     <string name="linear">Linear</string>
     <string name="qrcode">QRCode</string>
     <string name="pdf417">PDF417</string>
     <string name="datamatrix">DataMatrix</string>
     <string name="Aztec">Aztec</string>
+    <string name="Databar">GS1 DataBar</string>
+    <string name="PatchCode">PatchCode</string>
+    <string name="MaxiCode">MaxiCode</string>
+    <string name="MicroQR">MicroQR</string>
+    <string name="MicroPDF417">MicroPDF417</string>
+    <string name="GS1Composite">GS1 Composite Code</string>
 </resources>

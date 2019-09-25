@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import android.view.WindowManager;
 
 import com.dynamsoft.barcode.BarcodeReader;
+import com.dynamsoft.barcode.DBRServerLicenseVerificationListener;
 import com.dynamsoft.barcode.EnumBarcodeFormat;
 import com.dynamsoft.barcode.EnumIntermediateResultType;
 import com.dynamsoft.barcode.PublicRuntimeSettings;
@@ -18,17 +19,19 @@ public class MainActivity extends AppCompatActivity {
     private BarcodeReader mbarcodeReader;
     private DBRCache mCache;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         try {
-            mbarcodeReader = new BarcodeReader();
+            mbarcodeReader = new BarcodeReader("");
             //mbarcodeReader = new BarcodeReader("license-key");
             //You can get trial license from "https://www.dynamsoft.com/CustomerPortal/Portal/Triallicense.aspx"
             PublicRuntimeSettings settings = mbarcodeReader.getRuntimeSettings();
             settings.intermediateResultTypes = EnumIntermediateResultType.IRT_TYPED_BARCODE_ZONE;
+            settings.barcodeFormatIds = EnumBarcodeFormat.BF_ONED | EnumBarcodeFormat.BF_DATAMATRIX | EnumBarcodeFormat.BF_QR_CODE | EnumBarcodeFormat.BF_PDF417;
             mbarcodeReader.updateRuntimeSettings(settings);
         } catch (Exception e) {
             e.printStackTrace();
@@ -39,6 +42,12 @@ public class MainActivity extends AppCompatActivity {
         mCache.put("pdf417", "1");
         mCache.put("matrix", "1");
         mCache.put("aztec", "0");
+        mCache.put("databar", "0");
+        mCache.put("patchcode", "0");
+        mCache.put("maxicode", "0");
+        mCache.put("microqr", "0");
+        mCache.put("micropdf417", "0");
+        mCache.put("gs1compositecode", "0");
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -97,6 +106,24 @@ public class MainActivity extends AppCompatActivity {
             }
             if (mCache.getAsString("aztec").equals("1")) {
                 nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_AZTEC;
+            }
+            if (mCache.getAsString("databar").equals("1")) {
+                nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_GS1_DATABAR;
+            }
+            if (mCache.getAsString("patchcode").equals("1")) {
+                nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_PATCHCODE;
+            }
+            if (mCache.getAsString("maxicode").equals("1")) {
+                nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_MAXICODE;
+            }
+            if (mCache.getAsString("microqr").equals("1")) {
+                nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_MICRO_QR;
+            }
+            if (mCache.getAsString("micropdf417").equals("1")) {
+                nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_MICRO_PDF417;
+            }
+            if (mCache.getAsString("gs1compositecode").equals("1")) {
+                nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_GS1_COMPOSITE;
             }
 
             PublicRuntimeSettings runtimeSettings =  mbarcodeReader.getRuntimeSettings();
