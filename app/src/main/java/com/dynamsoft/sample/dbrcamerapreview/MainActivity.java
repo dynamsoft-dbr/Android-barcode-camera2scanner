@@ -27,6 +27,8 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             mbarcodeReader = new BarcodeReader("");
+            //mbarcodeReader = new BarcodeReader("license-key");
+            //You can get trial license from "https://www.dynamsoft.com/CustomerPortal/Portal/Triallicense.aspx"
             PublicRuntimeSettings settings = mbarcodeReader.getRuntimeSettings();
             settings.intermediateResultTypes = EnumIntermediateResultType.IRT_TYPED_BARCODE_ZONE;
             settings.barcodeFormatIds = EnumBarcodeFormat.BF_ONED | EnumBarcodeFormat.BF_DATAMATRIX | EnumBarcodeFormat.BF_QR_CODE | EnumBarcodeFormat.BF_PDF417;
