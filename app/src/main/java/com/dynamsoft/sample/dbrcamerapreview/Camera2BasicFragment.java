@@ -1129,7 +1129,12 @@ public class Camera2BasicFragment extends Fragment
         }
 
         for (int i = 0; i < result.length; i++) {
-            String strCurResult = "["+i+"] Barcode format:"+result[i].barcodeFormatString;
+            String strCurResult = "["+i+"] Barcode format:";
+            if (result[i].barcodeFormat != 0) {
+                strCurResult += result[i].barcodeFormatString;
+            } else {
+                strCurResult += result[i].barcodeFormatString_2;
+            }
             strCurResult +="\n"+result[i].barcodeText;
             if (i == 0)
                 strResult = strCurResult;
