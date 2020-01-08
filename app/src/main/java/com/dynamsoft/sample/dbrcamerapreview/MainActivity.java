@@ -11,6 +11,7 @@ import android.view.WindowManager;
 import com.dynamsoft.barcode.BarcodeReader;
 import com.dynamsoft.barcode.DBRServerLicenseVerificationListener;
 import com.dynamsoft.barcode.EnumBarcodeFormat;
+import com.dynamsoft.barcode.EnumBarcodeFormat_2;
 import com.dynamsoft.barcode.EnumIntermediateResultType;
 import com.dynamsoft.barcode.PublicRuntimeSettings;
 import com.dynamsoft.sample.dbrcamerapreview.util.DBRCache;
@@ -32,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
             PublicRuntimeSettings settings = mbarcodeReader.getRuntimeSettings();
             settings.intermediateResultTypes = EnumIntermediateResultType.IRT_TYPED_BARCODE_ZONE;
             settings.barcodeFormatIds = EnumBarcodeFormat.BF_ONED | EnumBarcodeFormat.BF_DATAMATRIX | EnumBarcodeFormat.BF_QR_CODE | EnumBarcodeFormat.BF_PDF417;
+            settings.barcodeFormatIds_2 = 0;
             mbarcodeReader.updateRuntimeSettings(settings);
         } catch (Exception e) {
             e.printStackTrace();
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
         mCache.put("microqr", "0");
         mCache.put("micropdf417", "0");
         mCache.put("gs1compositecode", "0");
+        mCache.put("postalcode", "0");
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -92,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         try {
             int nBarcodeFormat =0;
+            int nBarcodeFormat_2 = 0;
             if (mCache.getAsString("linear").equals("1")) {
                 nBarcodeFormat = nBarcodeFormat| EnumBarcodeFormat.BF_ONED;
             }
@@ -125,9 +129,13 @@ public class MainActivity extends AppCompatActivity {
             if (mCache.getAsString("gs1compositecode").equals("1")) {
                 nBarcodeFormat = nBarcodeFormat|EnumBarcodeFormat.BF_GS1_COMPOSITE;
             }
+            if (mCache.getAsString("postalcode").equals("1")) {
+                nBarcodeFormat_2 = nBarcodeFormat_2 | EnumBarcodeFormat_2.BF2_POSTALCODE;
+            }
 
             PublicRuntimeSettings runtimeSettings =  mbarcodeReader.getRuntimeSettings();
             runtimeSettings.barcodeFormatIds = nBarcodeFormat;
+            runtimeSettings.barcodeFormatIds_2 = nBarcodeFormat_2;
             mbarcodeReader.updateRuntimeSettings(runtimeSettings);
 
         } catch (Exception e) {
