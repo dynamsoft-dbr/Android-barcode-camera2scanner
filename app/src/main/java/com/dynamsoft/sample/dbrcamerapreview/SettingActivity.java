@@ -24,6 +24,7 @@ public class SettingActivity extends
 	CheckBox mMicroQR;
 	CheckBox mMicroPDF417;
 	CheckBox mGS1Composite;
+	CheckBox mPostalCode;
 	private int mBarcodeFormat;
 	private DBRCache mCache;
 
@@ -43,6 +44,7 @@ public class SettingActivity extends
 		mMicroQR = findViewById(R.id.ckbMicroQR);
 		mMicroPDF417 = findViewById(R.id.ckbMicroPDF417);
 		mGS1Composite = findViewById(R.id.ckbGS1Composite);
+		mPostalCode = findViewById(R.id.ckbPostalCode);
 
 
 		Toolbar toolbar = (Toolbar) findViewById(R.id.settoolbar);
@@ -64,6 +66,7 @@ public class SettingActivity extends
 		mMicroQR.setOnCheckedChangeListener(this);
 		mMicroPDF417.setOnCheckedChangeListener(this);
 		mGS1Composite.setOnCheckedChangeListener(this);
+		mPostalCode.setOnCheckedChangeListener(this);
 
 		mCache = DBRCache.get(this);
 		if ("1".equals(mCache.getAsString("linear"))) {
@@ -98,6 +101,9 @@ public class SettingActivity extends
 		}
 		if ("1".equals(mCache.getAsString("gs1compositecode"))) {
 			mGS1Composite.setChecked(true);
+		}
+		if ("1".equals(mCache.getAsString("postalcode"))) {
+			mPostalCode.setChecked(true);
 		}
 
 		updateFormatCheckboxsState();
@@ -151,6 +157,10 @@ public class SettingActivity extends
 			nState++;
 			enabledCheckBox = mGS1Composite;
 		}
+		if (mPostalCode.isChecked()) {
+			nState++;
+			enabledCheckBox = mPostalCode;
+		}
 
 
 		if(nState ==1){
@@ -167,6 +177,7 @@ public class SettingActivity extends
 			mMicroQR.setEnabled(true);
 			mMicroPDF417.setEnabled(true);
 			mGS1Composite.setEnabled(true);
+			mPostalCode.setEnabled(true);
 		}
 	}
 
@@ -226,6 +237,11 @@ public class SettingActivity extends
 			mCache.put("gs1compositecode", "1");
 		} else {
 			mCache.put("gs1compositecode", "0");
+		}
+		if (mPostalCode.isChecked()) {
+			mCache.put("postalcode", "1");
+		} else {
+			mCache.put("postalcode", "0");
 		}
 		setResult(0);
 	}
