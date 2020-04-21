@@ -34,4 +34,5 @@
     <string name="MicroPDF417">MicroPDF417</string>
     <string name="GS1Composite">GS1 Composite Code</string>
     <string name="postalcode">Postal Code</string>
+    <string name="dotcode">DotCode</string>
 </resources>
