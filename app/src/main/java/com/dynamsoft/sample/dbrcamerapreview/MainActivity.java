@@ -8,12 +8,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
 
-import com.dynamsoft.barcode.BarcodeReader;
-import com.dynamsoft.barcode.DBRServerLicenseVerificationListener;
-import com.dynamsoft.barcode.EnumBarcodeFormat;
-import com.dynamsoft.barcode.EnumBarcodeFormat_2;
-import com.dynamsoft.barcode.EnumIntermediateResultType;
-import com.dynamsoft.barcode.PublicRuntimeSettings;
+import com.dynamsoft.dbr.BarcodeReader;
+import com.dynamsoft.dbr.DBRServerLicenseVerificationListener;
+import com.dynamsoft.dbr.EnumBarcodeFormat;
+import com.dynamsoft.dbr.EnumBarcodeFormat_2;
+import com.dynamsoft.dbr.EnumIntermediateResultType;
+import com.dynamsoft.dbr.PublicRuntimeSettings;
 import com.dynamsoft.sample.dbrcamerapreview.util.DBRCache;
 
 public class MainActivity extends AppCompatActivity {
