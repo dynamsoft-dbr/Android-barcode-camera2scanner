@@ -65,10 +65,10 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.dynamsoft.barcode.EnumImagePixelFormat;
-import com.dynamsoft.barcode.IntermediateResult;
-import com.dynamsoft.barcode.LocalizationResult;
-import com.dynamsoft.barcode.TextResult;
+import com.dynamsoft.dbr.EnumImagePixelFormat;
+import com.dynamsoft.dbr.IntermediateResult;
+import com.dynamsoft.dbr.LocalizationResult;
+import com.dynamsoft.dbr.TextResult;
 import com.dynamsoft.sample.dbrcamerapreview.util.AutoFocusHelper;
 import com.dynamsoft.sample.dbrcamerapreview.util.CameraConstants;
 import com.dynamsoft.sample.dbrcamerapreview.util.CameraUtil;
